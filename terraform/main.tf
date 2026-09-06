@@ -1,60 +1,51 @@
 resource "aws_s3_bucket" "site" {
-  bucket         = var.site_bucket_name
-  force_destroy  = true
+  bucket        = "${var.project_name}-site"
+  force_destroy = true
   tags = {
-    Name = var.site_bucket_name
+    Name = "${var.project_name}-site"
   }
 }
 
 resource "aws_s3_bucket_ownership_controls" "ownership" {
   bucket = aws_s3_bucket.site.id
   rule {
-    object_ownership = "BucketOwnerPreferred"
+    object_ownership = "BucketOwnerEnforced"
   }
 }
 
 resource "aws_s3_bucket_public_access_block" "public_access" {
   bucket                  = aws_s3_bucket.site.id
-  block_public_acls        = false
-  block_public_policy      = false
-  ignore_public_acls       = false
-  restrict_public_buckets  = false
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
 }
 
-resource "aws_s3_bucket_acl" "public_acl" {
-  depends_on = [aws_s3_bucket_ownership_controls.ownership]
-  bucket     = aws_s3_bucket.site.id
-  acl        = "public-read"
-}
-
-resource "aws_s3_bucket_website_configuration" "site" {
+resource "aws_s3_bucket_policy" "cloudfront" {
   bucket = aws_s3_bucket.site.id
 
-  index_document {
-    suffix = "index.html"
-  }
+  policy = jsonencode({
+    Version = "2012-10-17"
 
-  error_document {
-    key = "index.html"
-  }
-}
+    Statement = [{
+      Sid    = "AllowCloudFrontServicePrincipalReadOnly"
+      Effect = "Allow"
 
-data "aws_iam_policy_document" "public" {
-  statement {
-    actions = ["s3:GetObject"]
+      Principal = {
+        Service = "cloudfront.amazonaws.com"
+      }
 
-    principals {
-      type        = "AWS"
-      identifiers = ["*"]
-    }
+      Action = "s3:GetObject"
 
-    resources = ["${aws_s3_bucket.site.arn}/*"]
-  }
-}
+      Resource = "${aws_s3_bucket.site.arn}/*"
 
-resource "aws_s3_bucket_policy" "public_policy" {
-  bucket = aws_s3_bucket.site.id
-  policy = data.aws_iam_policy_document.public.json
+      Condition = {
+        StringEquals = {
+          "AWS:SourceArn" = aws_cloudfront_distribution.cdn.arn
+        }
+      }
+    }]
+  })
 }
 
 data "aws_iam_policy_document" "lambda_assume" {
@@ -162,11 +153,11 @@ resource "aws_apigatewayv2_stage" "default" {
 }
 
 resource "aws_cloudfront_origin_access_control" "oac" {
-  name                  = "portfolio-oac"
-  description           = "Access control for S3 bucket"
+  name        = "${var.project_name}-oac"
+  description = "CloudFront access control for S3 bucket"
   origin_access_control_origin_type = "s3"
-  signing_behavior      = "always"
-  signing_protocol      = "sigv4"
+  signing_behavior = "always"
+  signing_protocol = "sigv4"
 }
 
 resource "aws_cloudfront_distribution" "cdn" {

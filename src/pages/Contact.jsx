@@ -1,10 +1,11 @@
 import React, { useState } from "react";
-const API_ENDPOINT = import.meta.env.VITE_CONTACT_API_ENDPOINT;
+
 export default function Contact() {
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const API_ENDPOINT = import.meta.env.VITE_CONTACT_API_ENDPOINT;
 
   async function handle(e) {
     e.preventDefault();

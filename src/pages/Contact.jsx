@@ -1,11 +1,10 @@
 import React, { useState } from "react";
-
+const API_ENDPOINT = import.meta.env.VITE_CONTACT_API_ENDPOINT;
 export default function Contact() {
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const API_ENDPOINT = "https://ix3qk7g3u3.execute-api.us-east-1.amazonaws.com/contact";
 
   async function handle(e) {
     e.preventDefault();

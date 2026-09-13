@@ -23,6 +23,8 @@ jobs:
           node-version: '18'
 
       - name: Install dependencies and build
+        env:
+          VITE_CONTACT_API_ENDPOINT: ${{ secrets.API_GATEWAY_URL }
         run: |
           npm install
           npm run build
